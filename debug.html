@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>MapLibre GL JS debug page</title>
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.css' />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        #checkboxes {
+            position: absolute;
+            background: #fff;
+            top:0;
+            left:0;
+            padding:10px;
+        }
+    </style>
+</head>
+
+<body>
+<div id='map'></div>
+<div id='checkboxes'>
+    <label><input id='show-tile-boundaries-checkbox' type='checkbox'> tile debug</label><br />
+    <label><input id='show-symbol-collision-boxes-checkbox' type='checkbox'> collision debug</label><br />
+    <label><input id='show-overdraw-checkbox' type='checkbox'> overdraw debug</label><br />
+    <label><input id='pitch-checkbox' type='checkbox' checked> pitch with rotate</label><br />
+    <label><input id='follow' type='checkbox' checked> follow</label><br />
+    <pre id="output"></pre><br />
+    <pre id="map-pos"></pre>
+</div>
+
+<script src='maplibre-gl-dev.js'></script>
+<script>
+
+var map = window.map = new maplibregl.Map({
+    container: 'map',
+    zoom: 12.5,
+    center: [8, 47],
+    style: 'https://vectortiles.geo.admin.ch/styles/ch.swisstopo.leichte-basiskarte.vt/style.json',
+    hash: true
+});
+
+map.addControl(new maplibregl.NavigationControl());
+map.addControl(new maplibregl.GeolocateControl({
+    positionOptions: {
+        enableHighAccuracy: true
+    },
+    trackUserLocation: true
+}));
+
+map.on('load', function() {
+
+    const d = new Date();
+    let time = d.getTime();
+
+    function handleOrientation(event) {
+        const d = new Date();
+        let timeNow = d.getTime();
+        if (timeNow - time < 16.6) {
+            return;
+        }
+        time = timeNow;
+        if (!document.getElementById("follow").checked) {
+            return;
+        }
+        document.getElementById("output").innerHTML = `alpha = ${event.alpha}, beta = ${event.beta}, gamma = ${event.gamma}`;
+        map.setBearing(-event.alpha);
+    }
+
+    window.addEventListener("deviceorientation", handleOrientation);
+    document.getElementById("output").innerHTML = "hei";
+
+    map.on('moveend', function() {
+        document.getElementById("output").innerHTML = `bearing = ${map.getBearing()}`;
+        console.log(map.transform.getCameraPosition().lngLat);
+        // document.getElementById("map-pos").innerHTML = `pos = ${JSON.stringify(map.transform.getCameraPosition())}\n`;
+        // document.getElementById("map-pos").innerHTML += `pos = ${JSON.stringify(map.transform.getCameraPosition2())}`;
+
+    });
+});
+
+</script>
+</body>
+</html>
